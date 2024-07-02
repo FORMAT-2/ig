@@ -5,6 +5,8 @@
     "express": "^4.19.2",
     "instagram-graph-api": "^6.1.0",
     "instagram-web-api": "^2.2.2",
+    "jsonwebtoken": "^9.0.2",
+    "jwt-decode": "^4.0.0",
     "mongoose": "^8.4.4"
   }
 }

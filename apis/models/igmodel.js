@@ -6,6 +6,7 @@ const user = new Schema({
    password:String,
    client_id:Number,
    client_secret:String,
+   appAuthToken:String,
    shortLivedToken:String,
    longLivedToken:String,
     createdAt: {

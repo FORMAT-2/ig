@@ -1,5 +1,6 @@
 const { default: mongoose } = require('mongoose');
 const {baseUrls} = require('../../base');
+const {createJwtToken, verifyJwtToken } = require('../../utils/jwtAuth');
 const { User } = require('../models/igmodel');
 const axios = require('axios');
 require('dotenv').config({ path: '.env.local' });
@@ -19,19 +20,23 @@ const signup = async (req, res) => {
     if (userExists) {
         return res.status(400).json("User Name is taken, Use another user name");
     }
-    const repsonseCode = await axios.get(`${baseUrls.authUrl}?client_id=${client_id}&redirect_uri=${encodeURIComponent(baseUrls.redirectUrl)}&scope=email`);
-    console.log(repsonseCode);
+    const token = await createJwtToken({userName});
     const newUser = new User({
         userName: userName,
         client_id:client_id,
         client_secret:client_secret,
-        password: password
-    })
-    await newUser.save().then(() => {
-        res.status(200).json("User created successfully please LOGIN!");
-    }).catch(error => {
-        console.error('Error creating user:', error);
+        password: password,
+        token:token
     });
+    await newUser.save();
+    const repsonseCode = await axios.get(`${baseUrls.authUrl}?client_id=${client_id}&redirect_uri=${encodeURIComponent(baseUrls.redirectUrl)}&scope=email`);
+    console.log(repsonseCode);
+
+    // .then(() => {
+    //     res.status(200).json("User created successfully please LOGIN!");
+    // }).catch(error => {
+    //     console.error('Error creating user:', error);
+    // });
 }
 const loginAuth = async (req, res) => {
     try {
