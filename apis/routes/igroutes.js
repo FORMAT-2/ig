@@ -1,9 +1,9 @@
 const router = require('express').Router();
-const {fetchUser,getToken,auth,oauthcallback} = require('../controllers/igapi');
+const {loginAuth,oauthcallback,signup} = require('../controllers/igapi');
 
-router.get('/get-user',fetchUser)
-router.get('/get-token',getToken)
-router.get('/auth',auth)
-router.get('/auth/callback',oauthcallback)
+router.post('/',signup)
+// router.get('/get-user',fetchUser)
+router.get('/login',loginAuth)
+router.get('/login/callback',oauthcallback)
 
 module.exports = router;
