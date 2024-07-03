@@ -1,6 +1,7 @@
 const { default: mongoose } = require('mongoose');
 const {baseUrls} = require('../../base');
 const {createJwtToken, verifyJwtToken } = require('../../utils/jwtAuth');
+const {verifAppId} = require('../../utils/verifyAppId');
 const { User } = require('../models/igmodel');
 const axios = require('axios');
 require('dotenv').config({ path: '.env.local' });
@@ -8,6 +9,7 @@ require('dotenv').config({ path: '.env.local' });
 const signup = async (req, res) => {
     const { userName, password, client_id, client_secret } = req.body;
     const userExists = await User.findOne({ userName: userName });
+    const validateAppID = await verifAppId(client_id)
     if (!userName) {
         return res.status(400).json("Please enter username")
     }
@@ -20,23 +22,19 @@ const signup = async (req, res) => {
     if (userExists) {
         return res.status(400).json("User Name is taken, Use another user name");
     }
-    const token = await createJwtToken({userName});
+    if(!validateAppID){
+        return res.status(400).json("Invalid App ID");
+    }
     const newUser = new User({
         userName: userName,
         client_id:client_id,
         client_secret:client_secret,
         password: password,
-        token:token
     });
     await newUser.save();
-    const repsonseCode = await axios.get(`${baseUrls.authUrl}?client_id=${client_id}&redirect_uri=${encodeURIComponent(baseUrls.redirectUrl)}&scope=email`);
-    console.log(repsonseCode);
-
-    // .then(() => {
-    //     res.status(200).json("User created successfully please LOGIN!");
-    // }).catch(error => {
-    //     console.error('Error creating user:', error);
-    // });
+    res.status(200).json("User Created! Please Login");
+    // const repsonseCode = await axios.get(`${baseUrls.authUrl}?client_id=${client_id}&redirect_uri=${encodeURIComponent(baseUrls.redirectUrl)}&scope=email`);
+    // console.log(repsonseCode);
 }
 const loginAuth = async (req, res) => {
     try {
@@ -54,8 +52,11 @@ const loginAuth = async (req, res) => {
         if (userExists.password != password) {
             return res.status(400).json("Incorrect Password");
         }
-        const authUrl = `${baseUrls.authUrl}?client_id=${userExists.client_id}&redirect_uri=${encodeURIComponent(baseUrls.redirectUrl)}&scope=email`;
-        res.status(302).redirect(authUrl)
+        const appAuthToken = await createJwtToken({userName});
+        await User.updateOne({appAuthToken:appAuthToken});
+        // const authUrl = `${baseUrls.authUrl}?client_id=${userExists.client_id}&redirect_uri=${encodeURIComponent(baseUrls.redirectUrl)}&scope=email`;
+        // res.status(302).redirect(authUrl)
+        res.status(200).json({appAuthToken:appAuthToken});
     } catch (error) {
         console.error('Error:', error.response ? error.response.data : error.message);
         res.status(500).send('Error');
@@ -65,42 +66,41 @@ const loginAuth = async (req, res) => {
 const oauthcallback = async (req, res) => {
     const { code } = req.query;
     if (!code) {
-        res.status(400).json({ error: "code is required" })
+        res.status(400).json({ error: "code is required" });
     }
-    return res.status(200).json(code);
-    // try {
-    //     const tokenUrl = baseUrls.tokenGen;
-    //     const tokenParams = {
-    //         client_id: process.env.CLIENT_ID,
-    //         redirect_uri: process.env.REDIRECT_URI,
-    //         client_secret: process.env.CLIENT_SECRET,
-    //         code: code
-    //     };
-    //     const tokenResponse = await axios.get(tokenUrl, { params: tokenParams });
-    //     const { access_token: shortLivedToken } = tokenResponse.data;
+    try {
+        const tokenUrl = baseUrls.tokenGen;
+        const tokenParams = {
+            client_id: process.env.CLIENT_ID,
+            redirect_uri: process.env.REDIRECT_URI,
+            client_secret: process.env.CLIENT_SECRET,
+            code: code
+        };
+        const tokenResponse = await axios.get(tokenUrl, { params: tokenParams });
+        const { access_token: shortLivedToken } = tokenResponse.data;
 
-    //     const longLivedTokenUrl = baseUrls.longLivedTokenGen;
-    //     const longLivedTokenParams = {
-    //         grant_type: 'fb_exchange_token',
-    //         client_id: process.env.CLIENT_ID,
-    //         client_secret: process.env.CLIENT_SECRET,
-    //         fb_exchange_token: shortLivedToken
-    //     };
-    //     const longLivedTokenResponse = await axios.get(longLivedTokenUrl, { params: longLivedTokenParams });
-    //     const { access_token: longLivedToken } = longLivedTokenResponse.data;
-    //     const user = new User({
-    //         shortLivedToken: shortLivedToken,
-    //         longLivedToken: longLivedToken
-    //     })
-    //     await user.save().then(() => {
-    //         res.status(200).json({ shortLivedToken, longLivedToken })
-    //     }).catch(error => {
-    //         console.error('Error saving user:', error);
-    //     });
-    // } catch (error) {
-    //     console.error('Error getting access token:', error.response ? error.response.data : error.message);
-    //     res.status(500).send('Error getting access token');
-    // }
+        const longLivedTokenUrl = baseUrls.longLivedTokenGen;
+        const longLivedTokenParams = {
+            grant_type: 'fb_exchange_token',
+            client_id: process.env.CLIENT_ID,
+            client_secret: process.env.CLIENT_SECRET,
+            fb_exchange_token: shortLivedToken
+        };
+        const longLivedTokenResponse = await axios.get(longLivedTokenUrl, { params: longLivedTokenParams });
+        const { access_token: longLivedToken } = longLivedTokenResponse.data;
+        const user = new User({
+            shortLivedToken: shortLivedToken,
+            longLivedToken: longLivedToken
+        })
+        await user.save().then(() => {
+            res.status(200).json({ shortLivedToken, longLivedToken })
+        }).catch(error => {
+            console.error('Error saving user:', error);
+        });
+    } catch (error) {
+        console.error('Error getting access token:', error.response ? error.response.data : error.message);
+        res.status(500).send('Error getting access token');
+    }
 }
 // const fetchUser  = async(req,res)=>{
     // const user = User.findOne({})

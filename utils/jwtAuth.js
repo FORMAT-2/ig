@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
+const {User}  = require('../apis/models/igmodel');
 const decodeJwt = require("jwt-decode");
-const { userSchema } = require("../PostgresModels");
 require("dotenv").config({path:'.env.local'});
 
 const createJwtToken = async(payload) => {
@@ -25,28 +25,13 @@ const verifyJwtToken = async (req, res, next) => {
     }
     decoded = jwt.verify(token, process.env.SECRETKEY);
     const decodedData = decodeJwt(token);
-    const user = await userSchema.findOne({ where: { id: decodedData.user } });
-    if (user.dataValues.role != "SADMIN") {
-      if(user.dataValues.userJourneyStatus=="STEP0"){
-        req.superAdminData = null
-        req.superAdminId = null
-      }
-      else{
-        const superAdminId = await userSchema.findOne({
-          where: { id: user.dataValues.superAdminId },
-        });
-        if (!superAdminId) {
-          console.log("Initiate Seeders");
-        }
-        req.superAdminData = superAdminId.dataValues;
-        req.superAdminId = user.dataValues.superAdminId;
-      }
-    }
+    const user = await User.findOne({ where: { id: decodedData.user } });
     if (!user) {
       res.status(400).json({ status: "error", message: "User not found" });
       return;
     }
-    req.user = user.dataValues;
+    req.user = user;
+    next();
 
     //   let json = res.json;
     //   res.json = c => {
@@ -63,7 +48,6 @@ const verifyJwtToken = async (req, res, next) => {
     //       res.json = json;
     //       return res.json(c);
     //   }
-    next();
   } catch (error) {
     console.log(error);
     if (error.name === "TokenExpiredError") {
