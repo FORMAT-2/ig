@@ -30,13 +30,6 @@ const signup = async (req, res) => {
     });
     await newUser.save();
     const repsonseCode = await axios.get(`${baseUrls.authUrl}?client_id=${client_id}&redirect_uri=${encodeURIComponent(baseUrls.redirectUrl)}&scope=email`);
-    console.log(repsonseCode);
-
-    // .then(() => {
-    //     res.status(200).json("User created successfully please LOGIN!");
-    // }).catch(error => {
-    //     console.error('Error creating user:', error);
-    // });
 }
 const loginAuth = async (req, res) => {
     try {
@@ -68,39 +61,39 @@ const oauthcallback = async (req, res) => {
         res.status(400).json({ error: "code is required" })
     }
     return res.status(200).json(code);
-    // try {
-    //     const tokenUrl = baseUrls.tokenGen;
-    //     const tokenParams = {
-    //         client_id: process.env.CLIENT_ID,
-    //         redirect_uri: process.env.REDIRECT_URI,
-    //         client_secret: process.env.CLIENT_SECRET,
-    //         code: code
-    //     };
-    //     const tokenResponse = await axios.get(tokenUrl, { params: tokenParams });
-    //     const { access_token: shortLivedToken } = tokenResponse.data;
+    try {
+        const tokenUrl = baseUrls.tokenGen;
+        const tokenParams = {
+            client_id: process.env.CLIENT_ID,
+            redirect_uri: process.env.REDIRECT_URI,
+            client_secret: process.env.CLIENT_SECRET,
+            code: code
+        };
+        const tokenResponse = await axios.get(tokenUrl, { params: tokenParams });
+        const { access_token: shortLivedToken } = tokenResponse.data;
 
-    //     const longLivedTokenUrl = baseUrls.longLivedTokenGen;
-    //     const longLivedTokenParams = {
-    //         grant_type: 'fb_exchange_token',
-    //         client_id: process.env.CLIENT_ID,
-    //         client_secret: process.env.CLIENT_SECRET,
-    //         fb_exchange_token: shortLivedToken
-    //     };
-    //     const longLivedTokenResponse = await axios.get(longLivedTokenUrl, { params: longLivedTokenParams });
-    //     const { access_token: longLivedToken } = longLivedTokenResponse.data;
-    //     const user = new User({
-    //         shortLivedToken: shortLivedToken,
-    //         longLivedToken: longLivedToken
-    //     })
-    //     await user.save().then(() => {
-    //         res.status(200).json({ shortLivedToken, longLivedToken })
-    //     }).catch(error => {
-    //         console.error('Error saving user:', error);
-    //     });
-    // } catch (error) {
-    //     console.error('Error getting access token:', error.response ? error.response.data : error.message);
-    //     res.status(500).send('Error getting access token');
-    // }
+        const longLivedTokenUrl = baseUrls.longLivedTokenGen;
+        const longLivedTokenParams = {
+            grant_type: 'fb_exchange_token',
+            client_id: process.env.CLIENT_ID,
+            client_secret: process.env.CLIENT_SECRET,
+            fb_exchange_token: shortLivedToken
+        };
+        const longLivedTokenResponse = await axios.get(longLivedTokenUrl, { params: longLivedTokenParams });
+        const { access_token: longLivedToken } = longLivedTokenResponse.data;
+        const user = new User({
+            shortLivedToken: shortLivedToken,
+            longLivedToken: longLivedToken
+        })
+        await user.save().then(() => {
+            res.status(200).json({ shortLivedToken, longLivedToken })
+        }).catch(error => {
+            console.error('Error saving user:', error);
+        });
+    } catch (error) {
+        console.error('Error getting access token:', error.response ? error.response.data : error.message);
+        res.status(500).send('Error getting access token');
+    }
 }
 // const fetchUser  = async(req,res)=>{
     // const user = User.findOne({})
