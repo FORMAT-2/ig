@@ -1,7 +1,8 @@
 const { default: mongoose } = require('mongoose');
-const {baseUrls} = require('../../base');
-const {createJwtToken, verifyJwtToken } = require('../../utils/jwtAuth');
-const {verifAppId} = require('../../utils/verifyAppId');
+const { baseUrls } = require('../../base');
+const { generateState } = require('../../utils/sessionMiddlware');
+const { createJwtToken, verifyJwtToken } = require('../../utils/jwtAuth');
+const { verifAppId } = require('../../utils/verifyAppId');
 const { User } = require('../models/igmodel');
 const axios = require('axios');
 require('dotenv').config({ path: '.env.local' });
@@ -13,8 +14,8 @@ const signup = async (req, res) => {
     if (!userName) {
         return res.status(400).json("Please enter username")
     }
-    if(!client_id || !client_secret){
-        return res.status(400).json("We can't proceed without"+" Client ID/App ID"+ " or"+" Client secret, if you don't know how to create them please visit https://developers.facebook.com/docs/facebook-login/security/#appsecret")
+    if (!client_id || !client_secret) {
+        return res.status(400).json("We can't proceed without" + " Client ID/App ID" + " or" + " Client secret, if you don't know how to create them please visit https://developers.facebook.com/docs/facebook-login/security/#appsecret")
     }
     if (!password) {
         return res.status(400).json("Please enter password")
@@ -22,13 +23,13 @@ const signup = async (req, res) => {
     if (userExists) {
         return res.status(400).json("User Name is taken, Use another user name");
     }
-    if(!validateAppID){
+    if (!validateAppID) {
         return res.status(400).json("Invalid App ID");
     }
     const newUser = new User({
         userName: userName,
-        client_id:client_id,
-        client_secret:client_secret,
+        client_id: client_id,
+        client_secret: client_secret,
         password: password,
     });
     await newUser.save();
@@ -52,23 +53,28 @@ const loginAuth = async (req, res) => {
         if (userExists.password != password) {
             return res.status(400).json("Incorrect Password");
         }
-        const appAuthToken = await createJwtToken({userName});
-        await User.updateOne({appAuthToken:appAuthToken});
-        // const authUrl = `${baseUrls.authUrl}?client_id=${userExists.client_id}&redirect_uri=${encodeURIComponent(baseUrls.redirectUrl)}&scope=email`;
-        // res.status(302).redirect(authUrl)
-        res.status(200).json({appAuthToken:appAuthToken});
+        const appAuthToken = await createJwtToken({ userName });
+        await userExists.updateOne({ appAuthToken: appAuthToken });
+        const authUrl = `${baseUrls.authUrl}?client_id=${userExists.client_id}&redirect_uri=${encodeURIComponent(baseUrls.redirectUrl)}&scope=email,public_profile&state=${userExists.userName}`;
+        console.log(userExists);
+        res.status(302).redirect(authUrl)
     } catch (error) {
         console.error('Error:', error.response ? error.response.data : error.message);
         res.status(500).send('Error');
     }
-
 }
 const oauthcallback = async (req, res) => {
-    const { code } = req.query;
+    const queryData = req.query;
+    const code = queryData.code;
     if (!code) {
         res.status(400).json({ error: "code is required" });
     }
     try {
+        const userData = await User.findOne({ userName: queryData.state });
+        console.log(userData);
+        if (!userData) {
+            return res.status(400).json("User doesn't exists");
+        }
         const tokenUrl = baseUrls.tokenGen;
         const tokenParams = {
             client_id: process.env.CLIENT_ID,
@@ -88,31 +94,34 @@ const oauthcallback = async (req, res) => {
         };
         const longLivedTokenResponse = await axios.get(longLivedTokenUrl, { params: longLivedTokenParams });
         const { access_token: longLivedToken } = longLivedTokenResponse.data;
-        const user = new User({
-            shortLivedToken: shortLivedToken,
-            longLivedToken: longLivedToken
+        const fbUserData = await axios.get('https://graph.facebook.com/me', {
+            params: {
+                access_token: longLivedToken
+            }
         })
-        await user.save().then(() => {
-            res.status(200).json({ shortLivedToken, longLivedToken })
-        }).catch(error => {
-            console.error('Error saving user:', error);
-        });
+        await userData.updateOne({
+            shortLivedToken: shortLivedToken,
+            longLivedToken: longLivedToken,
+            client_name:fbUserData.data.name,
+            client_unique_id:fbUserData.data.id
+        })
+        res.status(200).json({
+            shortLivedToken: shortLivedToken,
+            longLivedToken: longLivedToken,
+            appAuthToken: userData.appAuthToken,
+            userName:userData.userName,
+            client_name:fbUserData.data.name,
+            client_unique_id:fbUserData.data.id
+        })
     } catch (error) {
         console.error('Error getting access token:', error.response ? error.response.data : error.message);
         res.status(500).send('Error getting access token');
     }
 }
-// const fetchUser  = async(req,res)=>{
-    // const user = User.findOne({})
-    // const response = await axios.get('https://graph.facebook.com/me',{
-//             params: {
-//                 access_token: 
-//         })
-//         console.log(response.data);
-//     res.status(200).json(response.data);
+const uploadPost = async(req,res)=>{
+    const file = req.files;
+    console.log(file);
+}
 
 
-// }
-
-
-module.exports = { loginAuth, oauthcallback, signup };
+module.exports = { loginAuth, oauthcallback, signup, uploadPost};
