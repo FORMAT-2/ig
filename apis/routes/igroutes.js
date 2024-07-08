@@ -7,6 +7,6 @@ router.post('/',signup)
 // router.get('/get-user',fetchUser)
 router.get('/login',loginAuth)
 router.get('/login/callback',oauthcallback)
-router.post('/upload-post',uploadAny.any(),uploadPost)
+router.post('/upload-post',uploadAny.array('files'),uploadPost)
 
-module.exports = router;
+module.exports = router;    
