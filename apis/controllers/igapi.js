@@ -120,9 +120,7 @@ const oauthcallback = async (req, res) => {
 }
 const uploadPost = async(req,res)=>{
     const files = req.files;
-    console.log(files);
-    console.log(req.body);
-    
+    console.log(req.files);
     
 }
 
