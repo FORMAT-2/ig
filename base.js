@@ -6,4 +6,11 @@ const baseUrls = {
     loginUrl:'https://graph.facebook.com/me'
 }
 
-module.exports= {baseUrls};
+const allowedImageTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/png','image/bmp','image/heic','image/heif'];
+const allowedVideoTypes = ['video/mp4', 'video/quicktime'];
+const allowedMimeTypes = [...allowedImageTypes, ...allowedVideoTypes];
+const uploadAllowedTypes = ['uploadType_post', 'uploadType_reel', 'uploadType_story']; 
+const maxImageSize = 30 * 1024 * 1024;
+const maxVideoSize = 600 * 1024 * 1024;
+
+module.exports= {baseUrls,allowedMimeTypes,maxImageSize,maxVideoSize,uploadAllowedTypes,allowedImageTypes,allowedVideoTypes};

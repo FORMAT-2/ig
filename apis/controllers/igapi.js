@@ -120,10 +120,9 @@ const oauthcallback = async (req, res) => {
 }
 const uploadPost = async(req,res)=>{
     const files = req.files;
-    files.forEach((file ,index) => {
-        const fileInfo = req.body[`uploadDate_${index}`];
-        file.uploadDate = fileInfo;
-    });
+    console.log(files);
+    console.log(req.body);
+    
     
 }
 
