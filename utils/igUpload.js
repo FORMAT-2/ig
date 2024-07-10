@@ -1,4 +1,4 @@
-
+const {base} = require('../base');
 
 async function uploadImage(instagramAccountId,) {
     const form = new FormData();

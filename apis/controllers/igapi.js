@@ -123,9 +123,16 @@ const uploadPost = async(req,res)=>{
     if(!files){
         return res.status(400).json("Please upload files");
     }
-    console.log(req.files);
-    await Post. 
-
+    const posts = [];
+    files.forEach(element => {
+        const postDetails = {};
+        posts.push({
+            postdetails:element
+        });
+    });
+    console.log(posts);
+    await Post.insertMany(posts);
+    
 
     
 }
