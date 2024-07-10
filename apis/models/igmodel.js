@@ -12,12 +12,23 @@ const user = new Schema({
    shortLivedToken:String,
    redirectStateUrl:String,
    longLivedToken:String,
+   posts:[{type:Schema.Types.String, ref:'Post'}],
     createdAt: {
         type: Date,
         default: Date.now
     },
 });
 
+const post = new Schema({
+    userId:{type:Schema.Types.ObjectId,ref:'User'},
+    isUploaded:{type:Boolean,default:false},
+    postdetails:{type:Object},
+    createdAt: {
+        type: Date,
+        default: Date.now
+    },
+});
 const User = mongoose.model('User', user);
-
-module.exports = {User};
+const Post = mongoose.model('Post', post);
+ 
+module.exports = {User,Post};

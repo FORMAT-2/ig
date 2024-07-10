@@ -17,5 +17,5 @@ mongoose.connect(process.env.MONGO_URI, {
 });
 app.listen(3000, () => {
     console.log('connected to port 3000');
-})
+});
 app.use('/', require('./apis/routes/igroutes'));

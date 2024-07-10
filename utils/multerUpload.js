@@ -54,7 +54,7 @@ const uploadFileLocal = (req, res, next) => {
                 }
             }
             else {
-                errors.push("Uploaded file is not allowed " + `${file.originalname}`)
+                errors.push("Uploaded file extension is not allowed " + `${file.originalname}`)
             }
             if (errors.length > 0) {
                 files.forEach((file) => {

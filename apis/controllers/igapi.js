@@ -3,7 +3,7 @@ const { baseUrls } = require('../../base');
 const { generateState } = require('../../utils/sessionMiddlware');
 const { createJwtToken, verifyJwtToken } = require('../../utils/jwtAuth');
 const { verifAppId } = require('../../utils/verifyAppId');
-const { User } = require('../models/igmodel');
+const { User,Post } = require('../models/igmodel');
 const axios = require('axios');
 require('dotenv').config({ path: '.env.local' });
 
@@ -120,7 +120,13 @@ const oauthcallback = async (req, res) => {
 }
 const uploadPost = async(req,res)=>{
     const files = req.files;
+    if(!files){
+        return res.status(400).json("Please upload files");
+    }
     console.log(req.files);
+    await Post. 
+
+
     
 }
 
